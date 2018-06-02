@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Borewell</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/jquery/1.12.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+
+    <style type="text/css">
+      .feed-row { transition: background-color 2s ease; }
+      .rgb-cell { transition: color 0.5s ease, background-color 0.5s ease; }
+    </style>
+
+    <script type="text/javascript">
+        // setup time for updates
+        var updates = null;
+        // setup IoT service details and defaults
+        var thingspeak = {};
+        // check local storage for thingspeak
+
+            // set thingspeak
+            
+                thingspeak['channel'] = 461265;
+                thingspeak['read_api_key'] = '731DD1LS7WJMA4KN';
+            thingspeak['url'] = 'https://api.thingspeak.com';
+
+            thingspeak['start'] = false;
+            // save to local storage
+            localStorage.setItem('thingspeak', JSON.stringify(thingspeak));
+        
+        $(document).ready(function() {
+            // set default inputs
+            $('#channel').val(thingspeak['channel']);
+            $('#read_api_key').val(thingspeak['read_api_key']);
+            
+            if (thingspeak['start']) {
+                $('#start').find(".glyphicon").removeClass("glyphicon-play").addClass("glyphicon-pause");
+            }
+            // when inputs change update params and clear output
+            $( ".form-control" ).change(function(input) {
+                // update params
+                thingspeak['channel'] = $('#channel').val();
+                thingspeak['read_api_key'] = $('#read_api_key').val();
+                // save to local storage
+                localStorage.setItem('thingspeak', JSON.stringify(thingspeak));
+                // clear output
+                $('#header').html('');
+                $('#output').html('');
+            });
+            // start updates if play button is active
+            if (thingspeak['start']) {
+                // start updates
+                getUpdates();
+                // check for new updates
+                updates = setInterval('getUpdates()',0);
+            }
+        });
+        function getUpdates() {
+            // get the data with a webservice call
+            $.getJSON( thingspeak['url'] + '/channels/' + thingspeak['channel'] + '/feed.json?results=10' + '&location=' + thingspeak['location'] + '&status=' + thingspeak['status'] + '&api_key=' + thingspeak['read_api_key'], function( data ) {
+                // create table and headers if channel object exists
+                if (data.channel) {
+                    // set headers
+                    $('#header').html('<b>' + data.channel.name + '</b>');
+                    // create table head and body if they do not exist
+                    if ($('#output').find('thead').length == 0) {
+                        // add head to output table
+                        $('#output').append("<thead><tr></tr></thead>");
+                        // add date/time field as header
+                        $('#output').find('thead').append("<th>Update Time</th>");
+                        // add header for each field
+                        if (data.channel.hasOwnProperty('field1')) { $('#output').find('thead').append("<th>Motor Temperature</th>"); }
+                        if (data.channel.hasOwnProperty('field2')) { $('#output').find('thead').append("<th>Water Temperature</th>"); }
+                        if (data.channel.hasOwnProperty('field3')) { $('#output').find('thead').append("<th>Ph</th>"); }
+                        if (data.channel.hasOwnProperty('field4')) { $('#output').find('thead').append("<th>Turbidity</th>"); }
+                        if (data.channel.hasOwnProperty('field5')) { $('#output').find('thead').append("<th>Water Level</th>"); }
+                        
+                        // add body to output table
+                        $('#output').append("<tbody></tbody>");
+                    }
+                }
+                // if the field1 has data update the page
+                if (data.feeds) {
+                    // go through each feed and add it to the top of the table if the row does not exist
+                    $.each( data.feeds, function( i, feed ) {
+                        // add entry to table if it does not exist
+                        if ($('#output').find('#entry_' + feed.entry_id).length === 0) {
+                            // create a new blank row
+                            var $new_row = $("<tr id='entry_" + feed.entry_id + "' class='feed-row'></tr>");
+                            // add time/date data to field
+                            $new_row.append("<td><time datetime='" + feed.created_at + "'>" + feed.created_at + "</time></td>");
+                            // add field data to each field
+                            if (feed.hasOwnProperty('field1')) { $new_row.append(getTableElement(feed.field1)); }
+                            if (feed.hasOwnProperty('field2')) { $new_row.append(getTableElement(feed.field2)); }
+                            if (feed.hasOwnProperty('field3')) { $new_row.append(getTableElement(feed.field3)); }
+                            if (feed.hasOwnProperty('field4')) { $new_row.append(getTableElement(feed.field4)); }
+                            if (feed.hasOwnProperty('field5')) { $new_row.append(getTableElement(feed.field5)); }
+        
+                            // add the row to the table
+                            $('#output').prepend($new_row);
+                            // set the background color to green
+                            $new_row.css('background-color', '#efe');
+                            // remove the background color after 500ms
+                            // css transitions are used with the feed-row class to make this smooth
+                            setTimeout(function() {
+                                $new_row.css('background-color', '');
+                            }, 500);
+                        }
+                    });
+                }
+            });
+        }
+        function getTableElement(content) {
+          // create a table element containing the given content
+          var $td = $('<td>' + content + '</td>');
+          // regex pattern to match RGB hex values
+          // remove preceding ^ to match colors within text
+          var rgbPattern = /^#(([a-f\d]{2}){3})$/i;
+          // check content for a color
+          if (rgbPattern.test(content)) {
+            // extract that color
+            var color = rgbPattern.exec(content)[0];
+            // mark the cell as a rgb-cell for the CSS transitions
+            $td.addClass('rgb-cell');
+            // set the cell's background color to the hex color
+            $td.css('background-color', color);
+            // determine whether to set the font to white or black depending on the hex color
+            $td.css('color', useDarkFont(color) ? '#000' : '#fff');
+            // remove background and text color when hovering and restore when mouse exits
+            $td.hover(
+              function() {
+                $td.css('background-color', '');
+                $td.css('color', '');
+              },
+              function() {
+                $td.css('background-color', color);
+                $td.css('color', useDarkFont(color) ? '#000' : '#fff');
+              });
+          }
+          return $td;
+        }
+        // tweaked from https://stackoverflow.com/questions/1855884/determine-font-color-based-on-background-color
+        function useDarkFont(color) {
+          // regex to separate RGB components
+          var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+          // Counting the perceptive luminance - human eye favors green color...
+          var a = 1 - ( 0.299 * parseInt(result[1], 16) + 0.587 * parseInt(result[2], 16) + 0.114 * parseInt(result[3], 16)) / 255;
+          return a < 0.5;
+        }
+        // start / stop updates
+        function playPause(button) {
+            // switch button state and start or stop updates
+            if ($(button).find(".glyphicon").hasClass("glyphicon-pause")) {
+                // show play button state
+                $(button).find(".glyphicon").removeClass("glyphicon-pause").addClass("glyphicon-play");
+                // update params
+                thingspeak['start'] = false;
+                // stop updates
+                clearInterval(updates);
+            }
+            else {
+                // show pause button state
+                $(button).find(".glyphicon").removeClass("glyphicon-play").addClass("glyphicon-pause");
+                // update params
+                thingspeak['start'] = true;
+                // start updates
+                getUpdates();
+                // check for new updates
+                updates = setInterval('getUpdates()',5000);
+            }
+            // save to local storage
+            localStorage.setItem('thingspeak', JSON.stringify(thingspeak));
+        }
+
+      </script>
+</head>
+<body>
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#iotNavBar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">Borewell Analysis</a>
+            </div>
+            <div class="collapse navbar-collapse" id="iotNavBar">
+                <ul class="nav navbar-nav">
+                    <li><a href="thingspeak.html">Delhi</a></li>
+                    <li><a href="mumbai.html">Mumbai</a></li>
+                    <li class="active"><a href="kolkata.html">Kolkata</a></li>
+                </ul>
+            </div>
+    </nav>
+
+
+    <div class="container">
+
+        <div class="page-header">
+            <h1>Sensor Values</h1>
+        </div>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="row">
+                    <div class="col-lg-2">
+                        <div class="input-group">
+                            <span class="input-group-addon">Channel</span>
+                            <input type="text" class="form-control" id="channel">
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="input-group">
+                            <span class="input-group-addon">Read API Key</span>
+                            <input type="text" class="form-control" id="read_api_key">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                           <button type="button" class="btn btn-default" id="location" onclick="window.location.href='charts_kolkata.html'">Analysis</button>
+
+                        <button type="button" class="btn btn-primary" onClick="playPause(this)" id="start">
+                            <span class="glyphicon glyphicon-play"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <h1 id="header"></h1>
+
+                <table class="table table-striped" id="output"></table>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

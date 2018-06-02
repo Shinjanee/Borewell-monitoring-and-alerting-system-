@@ -1,0 +1,40 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Borewell</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/jquery/1.12.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+
+    <style type="text/css">
+      .feed-row { transition: background-color 2s ease; }
+      .rgb-cell { transition: color 0.5s ease, background-color 0.5s ease; }
+    </style>
+   </head>
+<body>
+	    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#iotNavBar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">Borewell Analysis</a>
+            </div>
+            <div class="collapse navbar-collapse" id="iotNavBar">
+                <ul class="nav navbar-nav">
+                    <li><a href="thingspeak.html">Delhi</a></li>
+                    <li class="active"><a href="mumbai.html">Mumbai</a></li>
+                    <li><a href="kolkata.html">Kolkata</a></li>
+                </ul>
+            </div>
+    </nav>
+	<iframe width="450" height="250" style="border: 1px solid #cccccc;" src="http://thingspeak.com/channels/461261/charts/1?dynamic=true"></iframe>
+	<iframe width="450" height="250" style="border: 1px solid #cccccc;" src="http://thingspeak.com/channels/461261/charts/2?dynamic=true"></iframe>
+	<iframe width="450" height="250" style="border: 1px solid #cccccc;" src="http://thingspeak.com/channels/461261/charts/3?dynamic=true"></iframe>
+	<iframe width="450" height="250" style="border: 1px solid #cccccc;" src="http://thingspeak.com/channels/461261/charts/4?dynamic=true"></iframe>
+	<iframe width="450" height="250" style="border: 1px solid #cccccc;" src="http://thingspeak.com/channels/461261/charts/5?dynamic=true"></iframe>
+</body>
+</html>
